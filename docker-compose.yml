@@ -1,0 +1,17 @@
+version: '3:7'
+
+services:
+
+  rabbitmq:
+    image: rabbitmq:3-management
+    ports:
+      - 5677:5672
+      - 15677:15672
+    environment:
+      - RABBIT_DEFAULT_USER=guest
+      - RABBIT_DEFAULT_PASS=guest
+    networks:
+      - my-app
+
+networks:
+  my-app:
