@@ -1,17 +1,39 @@
-version: '3:7'
-
+version: '3.8'
 services:
-
+  # RabbitMQ
   rabbitmq:
     image: rabbitmq:3-management
     ports:
-      - 5677:5672
-      - 15677:15672
+      - "5672:5672"
+      - "15672:15672"
     environment:
-      - RABBIT_DEFAULT_USER=guest
-      - RABBIT_DEFAULT_PASS=guest
-    networks:
-      - my-app
+      - RABBITMQ_DEFAULT_USER=guest
+      - RABBITMQ_DEFAULT_PASS=guest
+    healthcheck:
+      test: ["CMD", "rabbitmqctl", "status"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
-networks:
-  my-app:
+  # Ваш NestJS сервис
+  api-gateway:
+    build: ./api-gateway
+    ports:
+      - "3000:3000"
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+    environment:
+      - RABBITMQ_URL=amqp://guest:guest@rabbitmq:5672
+
+  # Новый Java микросервис
+  pong-service:
+    build: ./pong-service
+    ports:
+      - "8081:8081"
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+    environment:
+      - SPRING_RABBITMQ_HOST=rabbitmq
+      - SPRING_RABBITMQ_PORT=5672
