@@ -13,5 +13,17 @@ services:
     networks:
       - my-app
 
+  api-gateway:
+    build: ./api-gateway
+    ports:
+      - "3000:3000"
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+    environment:
+      - RABBITMQ_URL=amqp://guest:guest@rabbitmq:5672
+
+
+
 networks:
   my-app:
