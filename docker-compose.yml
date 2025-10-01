@@ -12,6 +12,11 @@ services:
       - RABBIT_DEFAULT_PASS=guest
     networks:
       - my-app
+    healthcheck:
+      test: [ "CMD", "rabbitmqctl", "status" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
   api-gateway:
     build: ./api-gateway
@@ -21,7 +26,7 @@ services:
       rabbitmq:
         condition: service_healthy
     environment:
-      - RABBITMQ_URL=amqp://guest:guest@rabbitmq:5672
+      - RABBITMQ_URL=amqp://guest:guest@rabbitmq:5677
 
 
 
