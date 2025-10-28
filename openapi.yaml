@@ -1,0 +1,641 @@
+openapi: 3.0.0
+info:
+  title: Transcription Service API
+  version: 1.0.0
+  description: API для сервиса транскрибации с системой подписок
+
+servers:
+  - url: http://localhost:3000/api
+    description: Development server
+  - url: https://api.example.com/api
+    description: Production server
+
+tags:
+  - name: Auth
+    description: Аутентификация и авторизация
+  - name: Users
+    description: Управление пользователями
+  - name: Transcriptions
+    description: Транскрибация файлов
+  - name: Subscriptions
+    description: Подписки и платежи
+  - name: Notifications
+    description: Уведомления
+
+paths:
+  /auth/register:
+    post:
+      tags: [Auth]
+      summary: Регистрация пользователя
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RegisterDto"
+      responses:
+        "201":
+          description: Пользователь создан
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthResponse"
+
+  /auth/login:
+    post:
+      tags: [Auth]
+      summary: Вход в систему
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/LoginDto"
+      responses:
+        "200":
+          description: Успешный вход
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthResponse"
+
+  /auth/refresh:
+    post:
+      tags: [Auth]
+      summary: Обновление токена
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RefreshTokenDto"
+      responses:
+        "200":
+          description: Новый access token
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RefreshResponse"
+
+  /users/me:
+    get:
+      tags: [Users]
+      summary: Получить текущего пользователя
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Данные пользователя
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/User"
+
+  /transcriptions:
+    post:
+      tags: [Transcriptions]
+      summary: Создать транскрибацию
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateTranscriptionDto"
+      responses:
+        "201":
+          description: Транскрибация создана
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TranscriptionPipeline"
+
+  /transcriptions/{id}:
+    get:
+      tags: [Transcriptions]
+      summary: Получить транскрибацию
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Транскрибация
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Transcription"
+
+  /plans:
+    get:
+      tags: [Subscriptions]
+      summary: Получить список тарифов
+      responses:
+        "200":
+          description: Список тарифов
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Plan"
+
+  /subscriptions:
+    get:
+      tags: [Subscriptions]
+      summary: Получить подписку пользователя
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Подписка пользователя
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UserSubscription"
+
+  /notifications:
+    get:
+      tags: [Notifications]
+      summary: Получить уведомления
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Список уведомлений
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/InAppNotification"
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  schemas:
+    # Auth schemas
+    RegisterDto:
+      type: object
+      required: [login, password, username, email]
+      properties:
+        login:
+          type: string
+          format: email
+          description: Email для входа
+        password:
+          type: string
+          minLength: 8
+        username:
+          type: string
+          minLength: 3
+        email:
+          type: string
+          format: email
+        name:
+          type: string
+        surname:
+          type: string
+
+    LoginDto:
+      type: object
+      required: [login, password]
+      properties:
+        login:
+          type: string
+        password:
+          type: string
+
+    AuthResponse:
+      type: object
+      properties:
+        accessToken:
+          type: string
+        refreshToken:
+          type: string
+        user:
+          $ref: "#/components/schemas/User"
+
+    RefreshTokenDto:
+      type: object
+      required: [refreshToken]
+      properties:
+        refreshToken:
+          type: string
+
+    RefreshResponse:
+      type: object
+      properties:
+        accessToken:
+          type: string
+
+    # User schemas
+    User:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        username:
+          type: string
+        email:
+          type: string
+          format: email
+        name:
+          type: string
+        surname:
+          type: string
+        phone:
+          type: string
+        role:
+          type: string
+          default: user
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+
+    AuthUser:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        login:
+          type: string
+          format: email
+        emailVerified:
+          type: boolean
+          default: false
+        lastLoginAt:
+          type: string
+          format: date-time
+          nullable: true
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+
+    # Transcription schemas
+    CreateTranscriptionDto:
+      type: object
+      required: [fileId]
+      properties:
+        fileId:
+          type: string
+          format: uuid
+        language:
+          type: string
+          default: ru
+        priority:
+          type: integer
+          default: 0
+
+    TranscriptionPipeline:
+      type: object
+      properties:
+        id:
+          type: integer
+        userId:
+          type: string
+          format: uuid
+        pipelineStatus:
+          type: string
+          enum: [transcribing, summarizing, completed, failed]
+        priority:
+          type: integer
+          default: 0
+        metadata:
+          type: object
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+
+    Transcription:
+      type: object
+      properties:
+        id:
+          type: integer
+        pipelineId:
+          type: integer
+        fileId:
+          type: integer
+        originalFilename:
+          type: string
+        audioDurationSeconds:
+          type: integer
+        transcribedText:
+          type: string
+        language:
+          type: string
+          default: ru
+        status:
+          type: string
+          enum: [pending, processing, completed, failed]
+        modelUsed:
+          type: string
+        confidenceScore:
+          type: number
+          format: float
+          minimum: 0
+          maximum: 1
+        processingTimeSeconds:
+          type: integer
+        startedAt:
+          type: string
+          format: date-time
+          nullable: true
+        completedAt:
+          type: string
+          format: date-time
+          nullable: true
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+
+    Summary:
+      type: object
+      properties:
+        id:
+          type: integer
+        pipelineId:
+          type: integer
+        summaryText:
+          type: string
+        originalTextLength:
+          type: integer
+        summaryLength:
+          type: integer
+        compressionRatio:
+          type: number
+          format: float
+        modelUsed:
+          type: string
+        processingTimeSeconds:
+          type: integer
+        completedAt:
+          type: string
+          format: date-time
+          nullable: true
+        startedAt:
+          type: string
+          format: date-time
+          nullable: true
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+
+    File:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        transcriptionId:
+          type: string
+          format: uuid
+        type:
+          type: string
+          enum: [audio, video, document]
+        url:
+          type: string
+          format: uri
+        size:
+          type: integer
+          format: int64
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+
+    # Subscription schemas
+    Plan:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        title:
+          type: string
+        description:
+          type: string
+        features:
+          type: array
+          items:
+            type: string
+        monthlyPrice:
+          type: integer
+        yearlyPrice:
+          type: integer
+        isFeatured:
+          type: boolean
+          default: false
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+
+    UserSubscription:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        userId:
+          type: string
+          format: uuid
+        planId:
+          type: string
+          format: uuid
+        status:
+          $ref: "#/components/schemas/SubscriptionStatus"
+        startDate:
+          type: string
+          format: date-time
+          nullable: true
+        endDate:
+          type: string
+          format: date-time
+          nullable: true
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+
+    Transaction:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        userId:
+          type: string
+          format: uuid
+        subscriptionId:
+          type: string
+          format: uuid
+        amount:
+          type: integer
+        provider:
+          $ref: "#/components/schemas/PaymentProvider"
+        status:
+          $ref: "#/components/schemas/TransactionStatus"
+        externalId:
+          type: string
+          nullable: true
+        providerMeta:
+          type: object
+          nullable: true
+        billingPeriod:
+          $ref: "#/components/schemas/BillingPeriod"
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+
+    # Notification schemas
+    InAppNotification:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        userId:
+          type: string
+          format: uuid
+        type:
+          type: string
+        title:
+          type: string
+        message:
+          type: string
+        isRead:
+          type: boolean
+          default: false
+        readAt:
+          type: string
+          format: date-time
+          nullable: true
+        linkedType:
+          type: string
+        linkedId:
+          type: string
+          format: uuid
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+
+    EmailNotification:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        userId:
+          type: string
+          format: uuid
+        code:
+          type: string
+          maxLength: 10
+        purpose:
+          type: string
+          enum: [email_verification, password_reset]
+        emailSent:
+          type: boolean
+          default: false
+        emailSentAt:
+          type: string
+          format: date-time
+          nullable: true
+        verified:
+          type: boolean
+          default: false
+        verifiedAt:
+          type: string
+          format: date-time
+          nullable: true
+        expiresAt:
+          type: string
+          format: date-time
+        errorMessage:
+          type: string
+          nullable: true
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+
+    # Enums
+    SubscriptionStatus:
+      type: string
+      enum:
+        - PENDING_PAYMENT
+        - ACTIVE
+        - EXPIRED
+
+    PaymentProvider:
+      type: string
+      enum:
+        - YOOKASSA
+        - STRIPE
+        - CRYPTOPAY
+
+    TransactionStatus:
+      type: string
+      enum:
+        - PENDING
+        - SUCCEEDED
+        - FAILED
+        - CANCELLED
+
+    BillingPeriod:
+      type: string
+      enum:
+        - MONTHLY
+        - YEARLY
+
+    # Error schemas
+    Error:
+      type: object
+      properties:
+        error:
+          type: string
+        message:
+          type: string
+        statusCode:
+          type: integer
