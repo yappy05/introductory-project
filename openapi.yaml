@@ -15,12 +15,20 @@ tags:
     description: Аутентификация и авторизация
   - name: Users
     description: Управление пользователями
+  - name: Files
+    description: Управление файлами
   - name: Transcriptions
     description: Транскрибация файлов
   - name: Subscriptions
     description: Подписки и платежи
+  - name: Transactions
+    description: Платежи и транзакции
   - name: Notifications
     description: Уведомления
+  - name: Statistics
+    description: Статистика пользователя
+  - name: Admin
+    description: Административные функции
 
 paths:
   /auth/register:
@@ -40,6 +48,43 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/AuthResponse"
+              example:
+                accessToken: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+                refreshToken: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+                user:
+                  id: "550e8400-e29b-41d4-a716-446655440000"
+                  username: "john_doe"
+                  email: "john@example.com"
+                  name: "John"
+                  surname: "Doe"
+                  phone: "+79991234567"
+                  role: "user"
+                  createdAt: "2024-01-01T12:00:00Z"
+                  updatedAt: "2024-01-01T12:00:00Z"
+        "400":
+          description: Невалидные данные
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+              example:
+                error: "Bad Request"
+                message: "Невалидные данные"
+                statusCode: 400
+                timestamp: "2024-01-01T12:00:00Z"
+                path: "/api/auth/register"
+        "409":
+          description: Пользователь уже существует
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+              example:
+                error: "Conflict"
+                message: "Пользователь с таким email уже существует"
+                statusCode: 409
+                timestamp: "2024-01-01T12:00:00Z"
+                path: "/api/auth/register"
 
   /auth/login:
     post:
@@ -58,6 +103,43 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/AuthResponse"
+              example:
+                accessToken: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+                refreshToken: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+                user:
+                  id: "550e8400-e29b-41d4-a716-446655440000"
+                  username: "john_doe"
+                  email: "john@example.com"
+                  name: "John"
+                  surname: "Doe"
+                  phone: "+79991234567"
+                  role: "user"
+                  createdAt: "2024-01-01T12:00:00Z"
+                  updatedAt: "2024-01-01T12:00:00Z"
+        "401":
+          description: Неверные учетные данные
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+              example:
+                error: "Unauthorized"
+                message: "Неверные учетные данные"
+                statusCode: 401
+                timestamp: "2024-01-01T12:00:00Z"
+                path: "/api/auth/login"
+        "400":
+          description: Невалидные данные
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+              example:
+                error: "Bad Request"
+                message: "Невалидные данные"
+                statusCode: 400
+                timestamp: "2024-01-01T12:00:00Z"
+                path: "/api/auth/login"
 
   /auth/refresh:
     post:
@@ -76,6 +158,171 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/RefreshResponse"
+              example:
+                accessToken: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+        "401":
+          description: Невалидный refresh token
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+              example:
+                error: "Unauthorized"
+                message: "Невалидный refresh token"
+                statusCode: 401
+                timestamp: "2024-01-01T12:00:00Z"
+                path: "/api/auth/refresh"
+
+  /auth/logout:
+    post:
+      tags: [Auth]
+      summary: Выход из системы
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Успешный выход
+        "401":
+          description: Не авторизован
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
+  /auth/verify-email:
+    post:
+      tags: [Auth]
+      summary: Верификация email
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/VerifyEmailDto"
+      responses:
+        "200":
+          description: Email успешно верифицирован
+        "400":
+          description: Невалидный код или код истек
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
+  /auth/resend-verification:
+    post:
+      tags: [Auth]
+      summary: Повторная отправка кода верификации
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Код отправлен на email
+        "400":
+          description: Email уже верифицирован
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
+  /auth/forgot-password:
+    post:
+      tags: [Auth]
+      summary: Запрос сброса пароля
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ForgotPasswordDto"
+      responses:
+        "200":
+          description: Инструкции отправлены на email
+        "404":
+          description: Пользователь не найден
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
+  /auth/reset-password:
+    post:
+      tags: [Auth]
+      summary: Сброс пароля
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ResetPasswordDto"
+      responses:
+        "200":
+          description: Пароль успешно изменен
+        "400":
+          description: Невалидный код или код истек
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
+  /users:
+    post:
+      tags: [Users]
+      summary: Создать пользователя
+      description: Создает нового пользователя только с email. Остальные данные можно будет заполнить позже.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateUserDto"
+      responses:
+        "201":
+          description: Пользователь создан
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/User"
+              example:
+                id: "550e8400-e29b-41d4-a716-446655440000"
+                username: null
+                email: "john@example.com"
+                name: null
+                surname: null
+                phone: null
+                role: "user"
+                createdAt: "2024-01-01T12:00:00Z"
+                updatedAt: "2024-01-01T12:00:00Z"
+        "400":
+          description: Невалидные данные
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+              example:
+                error: "Bad Request"
+                message: "Невалидный email"
+                statusCode: 400
+                timestamp: "2024-01-01T12:00:00Z"
+                path: "/api/users"
+        "409":
+          description: Пользователь с таким email уже существует
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+              example:
+                error: "Conflict"
+                message: "Пользователь с таким email уже существует"
+                statusCode: 409
+                timestamp: "2024-01-01T12:00:00Z"
+                path: "/api/users"
+        "500":
+          description: Внутренняя ошибка сервера
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
 
   /users/me:
     get:
@@ -90,6 +337,442 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/User"
+              example:
+                id: "550e8400-e29b-41d4-a716-446655440000"
+                username: "john_doe"
+                email: "john@example.com"
+                name: "John"
+                surname: "Doe"
+                phone: "+79991234567"
+                role: "user"
+                createdAt: "2024-01-01T12:00:00Z"
+                updatedAt: "2024-01-01T12:00:00Z"
+        "401":
+          description: Не авторизован
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
+    patch:
+      tags: [Users]
+      summary: Обновить профиль пользователя
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateUserDto"
+      responses:
+        "200":
+          description: Профиль обновлен
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/User"
+              example:
+                id: "550e8400-e29b-41d4-a716-446655440000"
+                username: "john_doe"
+                email: "john@example.com"
+                name: "John"
+                surname: "Doe"
+                phone: "+79991234567"
+                role: "user"
+                createdAt: "2024-01-01T12:00:00Z"
+                updatedAt: "2024-01-15T10:30:00Z"
+        "400":
+          description: Невалидные данные
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
+  /files:
+    post:
+      tags: [Files]
+      summary: Загрузить файл
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required: [file]
+              properties:
+                file:
+                  type: string
+                  format: binary
+                  description: Аудио, видео или документ файл
+                type:
+                  type: string
+                  enum: [audio, video, document]
+                  description: Тип файла
+      responses:
+        "201":
+          description: Файл загружен
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/File"
+              example:
+                id: "880e8400-e29b-41d4-a716-446655440003"
+                userId: "550e8400-e29b-41d4-a716-446655440000"
+                transcriptionId: null
+                type: "audio"
+                url: "https://storage.example.com/files/880e8400-e29b-41d4-a716-446655440003"
+                size: 52428800
+                originalFilename: "audio.mp3"
+                mimeType: "audio/mpeg"
+                createdAt: "2024-01-01T12:00:00Z"
+                updatedAt: "2024-01-01T12:00:00Z"
+        "400":
+          description: Невалидный файл или превышен лимит размера
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+              example:
+                error: "Bad Request"
+                message: "Невалидный формат файла"
+                statusCode: 400
+                timestamp: "2024-01-01T12:00:00Z"
+                path: "/api/files"
+        "413":
+          description: Файл слишком большой
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+              example:
+                error: "Payload Too Large"
+                message: "Размер файла превышает максимально допустимый"
+                statusCode: 413
+                timestamp: "2024-01-01T12:00:00Z"
+                path: "/api/files"
+        "401":
+          description: Не авторизован
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "500":
+          description: Внутренняя ошибка сервера
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
+    get:
+      tags: [Files]
+      summary: Получить список файлов пользователя
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: page
+          in: query
+          schema:
+            type: integer
+            default: 1
+            minimum: 1
+          description: Номер страницы
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 20
+            minimum: 1
+            maximum: 100
+          description: Количество элементов на странице
+        - name: type
+          in: query
+          schema:
+            type: string
+            enum: [audio, video, document]
+          description: Фильтр по типу файла
+      responses:
+        "200":
+          description: Список файлов
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PaginatedFilesResponse"
+        "401":
+          description: Не авторизован
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "500":
+          description: Внутренняя ошибка сервера
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
+  /files/{id}:
+    get:
+      tags: [Files]
+      summary: Получить файл
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: Данные файла
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/File"
+        "404":
+          description: Файл не найден
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "401":
+          description: Не авторизован
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "403":
+          description: Доступ запрещен (файл принадлежит другому пользователю)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "500":
+          description: Внутренняя ошибка сервера
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
+    delete:
+      tags: [Files]
+      summary: Удалить файл
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: Файл удален
+        "404":
+          description: Файл не найден
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "401":
+          description: Не авторизован
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "403":
+          description: Доступ запрещен (файл принадлежит другому пользователю)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "500":
+          description: Внутренняя ошибка сервера
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
+  /pipelines:
+    get:
+      tags: [Transcriptions]
+      summary: Получить все pipelines транскрибаций пользователя с опциональными транскрибациями и summary
+      description: Возвращает список всех pipelines текущего пользователя. Используйте параметры includeTranscriptions и includeSummary для включения связанных данных в ответ. Это основной способ получения транскрибаций и summary по архитектуре БД.
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: page
+          in: query
+          schema:
+            type: integer
+            default: 1
+            minimum: 1
+          description: Номер страницы
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 20
+            minimum: 1
+            maximum: 100
+          description: Количество элементов на странице
+        - name: pipelineStatus
+          in: query
+          schema:
+            type: string
+            enum: [transcribing, summarizing, completed, failed]
+          description: Фильтр по статусу pipeline
+        - name: includeTranscriptions
+          in: query
+          schema:
+            type: boolean
+            default: false
+          description: Включить транскрибации в ответ
+        - name: includeSummary
+          in: query
+          schema:
+            type: boolean
+            default: false
+          description: Включить summary в ответ
+      responses:
+        "200":
+          description: Список pipelines пользователя
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PaginatedPipelinesResponse"
+              example:
+                data:
+                  - id: "660e8400-e29b-41d4-a716-446655440001"
+                    userId: "550e8400-e29b-41d4-a716-446655440000"
+                    pipelineStatus: "completed"
+                    priority: 0
+                    metadata: {}
+                    createdAt: "2024-01-01T12:00:00Z"
+                    updatedAt: "2024-01-01T13:00:00Z"
+                pagination:
+                  page: 1
+                  limit: 20
+                  total: 1
+                  totalPages: 1
+        "401":
+          description: Не авторизован
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "500":
+          description: Внутренняя ошибка сервера
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
+  /pipelines/{id}:
+    get:
+      tags: [Transcriptions]
+      summary: Получить конкретный pipeline с деталями
+      description: Возвращает pipeline с транскрибациями и summary. По умолчанию включает транскрибации и summary.
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: includeTranscriptions
+          in: query
+          schema:
+            type: boolean
+            default: true
+          description: Включить транскрибации в ответ
+        - name: includeSummary
+          in: query
+          schema:
+            type: boolean
+            default: true
+          description: Включить summary в ответ
+      responses:
+        "200":
+          description: Pipeline с деталями
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TranscriptionPipelineWithDetails"
+              example:
+                id: "660e8400-e29b-41d4-a716-446655440001"
+                userId: "550e8400-e29b-41d4-a716-446655440000"
+                pipelineStatus: "completed"
+                priority: 0
+                metadata: {}
+                createdAt: "2024-01-01T12:00:00Z"
+                updatedAt: "2024-01-01T13:00:00Z"
+                transcriptions:
+                  - id: "770e8400-e29b-41d4-a716-446655440002"
+                    pipelineId: "660e8400-e29b-41d4-a716-446655440001"
+                    fileId: "880e8400-e29b-41d4-a716-446655440003"
+                    originalFilename: "audio.mp3"
+                    audioDurationSeconds: 3600
+                    transcribedText: "Это транскрибированный текст из аудио файла..."
+                    language: "ru"
+                    status: "completed"
+                    modelUsed: "whisper-large-v3"
+                    confidenceScore: 0.95
+                    processingTimeSeconds: 120
+                    startedAt: "2024-01-01T12:00:00Z"
+                    completedAt: "2024-01-01T12:02:00Z"
+                    createdAt: "2024-01-01T12:00:00Z"
+                    updatedAt: "2024-01-01T12:02:00Z"
+                summary:
+                  id: "990e8400-e29b-41d4-a716-446655440004"
+                  pipelineId: "660e8400-e29b-41d4-a716-446655440001"
+                  summaryText: "Краткое содержание транскрибации..."
+                  originalTextLength: 5000
+                  summaryLength: 500
+                  compressionRatio: 0.1
+                  modelUsed: "gpt-4"
+                  processingTimeSeconds: 30
+                  startedAt: "2024-01-01T12:02:00Z"
+                  completedAt: "2024-01-01T12:02:30Z"
+                  createdAt: "2024-01-01T12:02:00Z"
+                  updatedAt: "2024-01-01T12:02:30Z"
+        "404":
+          description: Pipeline не найден
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+              example:
+                error: "Not Found"
+                message: "Pipeline не найден"
+                statusCode: 404
+                timestamp: "2024-01-01T12:00:00Z"
+                path: "/api/pipelines/660e8400-e29b-41d4-a716-446655440001"
+        "401":
+          description: Не авторизован
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "403":
+          description: Доступ запрещен (pipeline принадлежит другому пользователю)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "500":
+          description: Внутренняя ошибка сервера
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
 
   /transcriptions:
     post:
@@ -110,6 +793,103 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/TranscriptionPipeline"
+              example:
+                id: "660e8400-e29b-41d4-a716-446655440001"
+                userId: "550e8400-e29b-41d4-a716-446655440000"
+                pipelineStatus: "transcribing"
+                priority: 0
+                metadata: {}
+                createdAt: "2024-01-01T12:00:00Z"
+                updatedAt: "2024-01-01T12:00:00Z"
+        "400":
+          description: Невалидные данные или файл не найден
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+              example:
+                error: "Bad Request"
+                message: "Файл не найден"
+                statusCode: 400
+                timestamp: "2024-01-01T12:00:00Z"
+                path: "/api/transcriptions"
+        "402":
+          description: Превышен лимит подписки
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+              example:
+                error: "Payment Required"
+                message: "Превышен лимит транскрибаций для вашей подписки"
+                statusCode: 402
+                timestamp: "2024-01-01T12:00:00Z"
+                path: "/api/transcriptions"
+        "401":
+          description: Не авторизован
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "500":
+          description: Внутренняя ошибка сервера
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
+    get:
+      tags: [Transcriptions]
+      summary: Получить список транскрибаций (альтернативный способ)
+      description: Возвращает список транскрибаций напрямую. Рекомендуется использовать GET /pipelines с параметром includeTranscriptions=true для получения транскрибаций через pipeline, что соответствует архитектуре БД.
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: page
+          in: query
+          schema:
+            type: integer
+            default: 1
+            minimum: 1
+          description: Номер страницы
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 20
+            minimum: 1
+            maximum: 100
+          description: Количество элементов на странице
+        - name: status
+          in: query
+          schema:
+            type: string
+            enum: [pending, processing, completed, failed]
+          description: Фильтр по статусу
+        - name: language
+          in: query
+          schema:
+            type: string
+          description: Фильтр по языку
+      responses:
+        "200":
+          description: Список транскрибаций
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PaginatedTranscriptionsResponse"
+        "401":
+          description: Не авторизован
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "500":
+          description: Внутренняя ошибка сервера
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
 
   /transcriptions/{id}:
     get:
@@ -122,7 +902,8 @@ paths:
           in: path
           required: true
           schema:
-            type: integer
+            type: string
+            format: uuid
       responses:
         "200":
           description: Транскрибация
@@ -130,6 +911,138 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/Transcription"
+              example:
+                id: "770e8400-e29b-41d4-a716-446655440002"
+                pipelineId: "660e8400-e29b-41d4-a716-446655440001"
+                fileId: "880e8400-e29b-41d4-a716-446655440003"
+                originalFilename: "audio.mp3"
+                audioDurationSeconds: 3600
+                transcribedText: "Это транскрибированный текст из аудио файла..."
+                language: "ru"
+                status: "completed"
+                modelUsed: "whisper-large-v3"
+                confidenceScore: 0.95
+                processingTimeSeconds: 120
+                startedAt: "2024-01-01T12:00:00Z"
+                completedAt: "2024-01-01T12:02:00Z"
+                createdAt: "2024-01-01T12:00:00Z"
+                updatedAt: "2024-01-01T12:02:00Z"
+        "404":
+          description: Транскрибация не найдена
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+              example:
+                error: "Not Found"
+                message: "Транскрибация не найдена"
+                statusCode: 404
+                timestamp: "2024-01-01T12:00:00Z"
+                path: "/api/transcriptions/770e8400-e29b-41d4-a716-446655440002"
+        "401":
+          description: Не авторизован
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "403":
+          description: Доступ запрещен (транскрибация принадлежит другому пользователю)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "500":
+          description: Внутренняя ошибка сервера
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
+    delete:
+      tags: [Transcriptions]
+      summary: Удалить транскрибацию
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: Транскрибация удалена
+        "404":
+          description: Транскрибация не найдена
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "401":
+          description: Не авторизован
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "403":
+          description: Доступ запрещен (транскрибация принадлежит другому пользователю)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "500":
+          description: Внутренняя ошибка сервера
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
+  /transcriptions/{id}/summary:
+    get:
+      tags: [Transcriptions]
+      summary: Получить summary транскрибации
+      description: Рекомендуется использовать GET /pipelines/{pipelineId} с параметром includeSummary=true для получения summary через pipeline.
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: Summary транскрибации
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Summary"
+        "404":
+          description: Summary не найден
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "401":
+          description: Не авторизован
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "403":
+          description: Доступ запрещен (summary принадлежит другому пользователю)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "500":
+          description: Внутренняя ошибка сервера
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
 
   /plans:
     get:
@@ -144,6 +1057,36 @@ paths:
                 type: array
                 items:
                   $ref: "#/components/schemas/Plan"
+              example:
+                - id: "aa0e8400-e29b-41d4-a716-446655440005"
+                  title: "Базовый"
+                  description: "Базовый тарифный план"
+                  features:
+                    - "10 транскрибаций в месяц"
+                    - "Базовое качество"
+                  monthlyPrice: 990
+                  yearlyPrice: 9900
+                  isFeatured: false
+                  createdAt: "2024-01-01T12:00:00Z"
+                  updatedAt: "2024-01-01T12:00:00Z"
+                - id: "bb0e8400-e29b-41d4-a716-446655440006"
+                  title: "Профессиональный"
+                  description: "Профессиональный тарифный план"
+                  features:
+                    - "100 транскрибаций в месяц"
+                    - "Высокое качество"
+                    - "Суммаризация"
+                  monthlyPrice: 2990
+                  yearlyPrice: 29900
+                  isFeatured: true
+                  createdAt: "2024-01-01T12:00:00Z"
+                  updatedAt: "2024-01-01T12:00:00Z"
+        "500":
+          description: Внутренняя ошибка сервера
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
 
   /subscriptions:
     get:
@@ -158,6 +1101,310 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/UserSubscription"
+              example:
+                id: "cc0e8400-e29b-41d4-a716-446655440007"
+                userId: "550e8400-e29b-41d4-a716-446655440000"
+                planId: "bb0e8400-e29b-41d4-a716-446655440006"
+                status: "ACTIVE"
+                startDate: "2024-01-01T12:00:00Z"
+                endDate: "2024-02-01T12:00:00Z"
+                createdAt: "2024-01-01T12:00:00Z"
+                updatedAt: "2024-01-01T12:00:00Z"
+        "404":
+          description: Подписка не найдена
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+              example:
+                error: "Not Found"
+                message: "Подписка не найдена"
+                statusCode: 404
+                timestamp: "2024-01-01T12:00:00Z"
+                path: "/api/subscriptions"
+
+    post:
+      tags: [Subscriptions]
+      summary: Создать подписку
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateSubscriptionDto"
+      responses:
+        "201":
+          description: Подписка создана
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UserSubscription"
+              example:
+                id: "cc0e8400-e29b-41d4-a716-446655440007"
+                userId: "550e8400-e29b-41d4-a716-446655440000"
+                planId: "bb0e8400-e29b-41d4-a716-446655440006"
+                status: "ACTIVE"
+                startDate: "2024-01-01T12:00:00Z"
+                endDate: "2024-02-01T12:00:00Z"
+                createdAt: "2024-01-01T12:00:00Z"
+                updatedAt: "2024-01-01T12:00:00Z"
+        "400":
+          description: Невалидные данные
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+              example:
+                error: "Bad Request"
+                message: "Невалидные данные"
+                statusCode: 400
+                timestamp: "2024-01-01T12:00:00Z"
+                path: "/api/subscriptions"
+
+  /subscriptions/{id}:
+    patch:
+      tags: [Subscriptions]
+      summary: Обновить подписку
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateSubscriptionDto"
+      responses:
+        "200":
+          description: Подписка обновлена
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UserSubscription"
+        "404":
+          description: Подписка не найдена
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
+    delete:
+      tags: [Subscriptions]
+      summary: Отменить подписку
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: Подписка отменена
+        "404":
+          description: Подписка не найдена
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
+  /subscriptions/{id}/renew:
+    post:
+      tags: [Subscriptions]
+      summary: Продлить подписку
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RenewSubscriptionDto"
+      responses:
+        "200":
+          description: Подписка продлена
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UserSubscription"
+        "400":
+          description: Невалидные данные
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
+  /transactions:
+    get:
+      tags: [Transactions]
+      summary: Получить список транзакций
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: page
+          in: query
+          schema:
+            type: integer
+            default: 1
+            minimum: 1
+          description: Номер страницы
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 20
+            minimum: 1
+            maximum: 100
+          description: Количество элементов на странице
+        - name: status
+          in: query
+          schema:
+            $ref: "#/components/schemas/TransactionStatus"
+          description: Фильтр по статусу
+        - name: provider
+          in: query
+          schema:
+            $ref: "#/components/schemas/PaymentProvider"
+          description: Фильтр по провайдеру
+      responses:
+        "200":
+          description: Список транзакций
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PaginatedTransactionsResponse"
+              example:
+                data:
+                  - id: "dd0e8400-e29b-41d4-a716-446655440008"
+                    userId: "550e8400-e29b-41d4-a716-446655440000"
+                    planId: "bb0e8400-e29b-41d4-a716-446655440006"
+                    amount: 2990
+                    currency: "RUB"
+                    status: "COMPLETED"
+                    provider: "stripe"
+                    providerTransactionId: "txn_1234567890"
+                    metadata: {}
+                    createdAt: "2024-01-01T12:00:00Z"
+                    updatedAt: "2024-01-01T12:00:00Z"
+                pagination:
+                  page: 1
+                  limit: 20
+                  total: 1
+                  totalPages: 1
+
+    post:
+      tags: [Transactions]
+      summary: Создать транзакцию
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateTransactionDto"
+      responses:
+        "201":
+          description: Транзакция создана
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Transaction"
+              example:
+                id: "dd0e8400-e29b-41d4-a716-446655440008"
+                userId: "550e8400-e29b-41d4-a716-446655440000"
+                planId: "bb0e8400-e29b-41d4-a716-446655440006"
+                amount: 2990
+                currency: "RUB"
+                status: "PENDING"
+                provider: "stripe"
+                providerTransactionId: null
+                metadata: {}
+                createdAt: "2024-01-01T12:00:00Z"
+                updatedAt: "2024-01-01T12:00:00Z"
+        "400":
+          description: Невалидные данные
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+              example:
+                error: "Bad Request"
+                message: "Невалидные данные"
+                statusCode: 400
+                timestamp: "2024-01-01T12:00:00Z"
+                path: "/api/transactions"
+
+  /transactions/{id}:
+    get:
+      tags: [Transactions]
+      summary: Получить транзакцию
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: Данные транзакции
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Transaction"
+        "404":
+          description: Транзакция не найдена
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
+  /transactions/webhook/{provider}:
+    post:
+      tags: [Transactions]
+      summary: Webhook для обработки платежей
+      parameters:
+        - name: provider
+          in: path
+          required: true
+          schema:
+            $ref: "#/components/schemas/PaymentProvider"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              description: Данные от провайдера платежей
+      responses:
+        "200":
+          description: Webhook обработан
+        "400":
+          description: Невалидные данные
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
 
   /notifications:
     get:
@@ -165,15 +1412,878 @@ paths:
       summary: Получить уведомления
       security:
         - bearerAuth: []
+      parameters:
+        - name: page
+          in: query
+          schema:
+            type: integer
+            default: 1
+            minimum: 1
+          description: Номер страницы
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 20
+            minimum: 1
+            maximum: 100
+          description: Количество элементов на странице
+        - name: isRead
+          in: query
+          schema:
+            type: boolean
+          description: Фильтр по статусу прочтения
       responses:
         "200":
           description: Список уведомлений
           content:
             application/json:
               schema:
-                type: array
-                items:
-                  $ref: "#/components/schemas/InAppNotification"
+                $ref: "#/components/schemas/PaginatedNotificationsResponse"
+              example:
+                data:
+                  - id: "ee0e8400-e29b-41d4-a716-446655440009"
+                    userId: "550e8400-e29b-41d4-a716-446655440000"
+                    type: "transcription_completed"
+                    title: "Транскрибация завершена"
+                    message: "Ваша транскрибация audio.mp3 завершена"
+                    isRead: false
+                    metadata: {}
+                    createdAt: "2024-01-01T12:00:00Z"
+                    updatedAt: "2024-01-01T12:00:00Z"
+                pagination:
+                  page: 1
+                  limit: 20
+                  total: 1
+                  totalPages: 1
+
+  /notifications/{id}:
+    patch:
+      tags: [Notifications]
+      summary: Отметить уведомление как прочитанное
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: Уведомление отмечено как прочитанное
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/InAppNotification"
+        "404":
+          description: Уведомление не найдено
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
+    delete:
+      tags: [Notifications]
+      summary: Удалить уведомление
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: Уведомление удалено
+        "404":
+          description: Уведомление не найдено
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
+  /notifications/read-all:
+    patch:
+      tags: [Notifications]
+      summary: Отметить все уведомления как прочитанные
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Все уведомления отмечены как прочитанные
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  count:
+                    type: integer
+                    description: Количество отмеченных уведомлений
+
+  /statistics:
+    get:
+      tags: [Statistics]
+      summary: Получить статистику пользователя
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Статистика пользователя
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UserStatistics"
+              example:
+                totalTranscriptions: 25
+                totalPipelines: 25
+                totalFiles: 30
+                totalDurationSeconds: 90000
+                subscriptionsCount: 1
+                activeSubscription: true
+                totalSpent: 2990
+                averageProcessingTimeSeconds: 120
+        "401":
+          description: Не авторизован
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
+  # Admin endpoints
+  /admin/users:
+    get:
+      tags: [Admin]
+      summary: Получить список всех пользователей
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: page
+          in: query
+          schema:
+            type: integer
+            default: 1
+            minimum: 1
+          description: Номер страницы
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 20
+            minimum: 1
+            maximum: 100
+          description: Количество элементов на странице
+        - name: role
+          in: query
+          schema:
+            type: string
+          description: Фильтр по роли
+        - name: email
+          in: query
+          schema:
+            type: string
+          description: Поиск по email
+        - name: username
+          in: query
+          schema:
+            type: string
+          description: Поиск по username
+      responses:
+        "200":
+          description: Список пользователей
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PaginatedUsersResponse"
+        "401":
+          description: Не авторизован
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "403":
+          description: Недостаточно прав
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
+  /admin/users/{id}:
+    get:
+      tags: [Admin]
+      summary: Получить пользователя по ID
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: Данные пользователя
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/User"
+        "404":
+          description: Пользователь не найден
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "403":
+          description: Недостаточно прав
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
+    patch:
+      tags: [Admin]
+      summary: Обновить данные пользователя
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AdminUpdateUserDto"
+      responses:
+        "200":
+          description: Пользователь обновлен
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/User"
+        "404":
+          description: Пользователь не найден
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "403":
+          description: Недостаточно прав
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
+    delete:
+      tags: [Admin]
+      summary: Удалить пользователя
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: Пользователь удален
+        "404":
+          description: Пользователь не найден
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "403":
+          description: Недостаточно прав
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
+  /admin/users/{id}/subscription:
+    get:
+      tags: [Admin]
+      summary: Получить подписку пользователя
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: Подписка пользователя
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UserSubscription"
+        "404":
+          description: Пользователь или подписка не найдены
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "403":
+          description: Недостаточно прав
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
+  /admin/users/{id}/pipelines:
+    get:
+      tags: [Admin]
+      summary: Получить все pipelines транскрибаций пользователя с опциональными транскрибациями и summary
+      description: Возвращает список всех pipelines пользователя. Используйте параметры includeTranscriptions и includeSummary для включения связанных данных в ответ.
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: page
+          in: query
+          schema:
+            type: integer
+            default: 1
+            minimum: 1
+          description: Номер страницы
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 20
+            minimum: 1
+            maximum: 100
+          description: Количество элементов на странице
+        - name: pipelineStatus
+          in: query
+          schema:
+            type: string
+            enum: [transcribing, summarizing, completed, failed]
+          description: Фильтр по статусу pipeline
+        - name: includeTranscriptions
+          in: query
+          schema:
+            type: boolean
+            default: false
+          description: Включить транскрибации в ответ
+        - name: includeSummary
+          in: query
+          schema:
+            type: boolean
+            default: false
+          description: Включить summary в ответ
+      responses:
+        "200":
+          description: Список pipelines пользователя
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PaginatedPipelinesResponse"
+        "404":
+          description: Пользователь не найден
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "403":
+          description: Недостаточно прав
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
+  /admin/users/{id}/pipelines/{pipelineId}:
+    get:
+      tags: [Admin]
+      summary: Получить конкретный pipeline пользователя с деталями
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: pipelineId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: includeTranscriptions
+          in: query
+          schema:
+            type: boolean
+            default: true
+          description: Включить транскрибации в ответ
+        - name: includeSummary
+          in: query
+          schema:
+            type: boolean
+            default: true
+          description: Включить summary в ответ
+      responses:
+        "200":
+          description: Pipeline с деталями
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TranscriptionPipelineWithDetails"
+        "404":
+          description: Пользователь или pipeline не найдены
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "403":
+          description: Недостаточно прав
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
+  /admin/users/{id}/statistics:
+    get:
+      tags: [Admin]
+      summary: Получить статистику пользователя
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: Статистика пользователя
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UserStatistics"
+        "404":
+          description: Пользователь не найден
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "403":
+          description: Недостаточно прав
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
+  /admin/plans:
+    post:
+      tags: [Admin]
+      summary: Создать тарифный план
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreatePlanDto"
+      responses:
+        "201":
+          description: Тарифный план создан
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Plan"
+        "400":
+          description: Невалидные данные
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "403":
+          description: Недостаточно прав
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
+  /admin/plans/{id}:
+    patch:
+      tags: [Admin]
+      summary: Обновить тарифный план
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdatePlanDto"
+      responses:
+        "200":
+          description: Тарифный план обновлен
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Plan"
+        "404":
+          description: Тарифный план не найден
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "403":
+          description: Недостаточно прав
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
+    delete:
+      tags: [Admin]
+      summary: Удалить тарифный план
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: Тарифный план удален
+        "404":
+          description: Тарифный план не найден
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "403":
+          description: Недостаточно прав
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "409":
+          description: Невозможно удалить план с активными подписками
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
+  /admin/pipelines:
+    get:
+      tags: [Admin]
+      summary: Получить все pipelines транскрибаций
+      description: Возвращает список всех pipelines в системе. Используйте параметры includeTranscriptions и includeSummary для включения связанных данных в ответ. Это основной способ получения транскрибаций и summary по архитектуре БД.
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: page
+          in: query
+          schema:
+            type: integer
+            default: 1
+            minimum: 1
+          description: Номер страницы
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 20
+            minimum: 1
+            maximum: 100
+          description: Количество элементов на странице
+        - name: pipelineStatus
+          in: query
+          schema:
+            type: string
+            enum: [transcribing, summarizing, completed, failed]
+          description: Фильтр по статусу pipeline
+        - name: userId
+          in: query
+          schema:
+            type: string
+            format: uuid
+          description: Фильтр по пользователю
+        - name: includeTranscriptions
+          in: query
+          schema:
+            type: boolean
+            default: false
+          description: Включить транскрибации в ответ
+        - name: includeSummary
+          in: query
+          schema:
+            type: boolean
+            default: false
+          description: Включить summary в ответ
+      responses:
+        "200":
+          description: Список всех pipelines
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PaginatedPipelinesResponse"
+        "401":
+          description: Не авторизован
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "403":
+          description: Недостаточно прав
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "500":
+          description: Внутренняя ошибка сервера
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
+  /admin/pipelines/{id}:
+    get:
+      tags: [Admin]
+      summary: Получить конкретный pipeline с деталями
+      description: Возвращает pipeline с транскрибациями и summary. По умолчанию включает транскрибации и summary.
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: includeTranscriptions
+          in: query
+          schema:
+            type: boolean
+            default: true
+          description: Включить транскрибации в ответ
+        - name: includeSummary
+          in: query
+          schema:
+            type: boolean
+            default: true
+          description: Включить summary в ответ
+      responses:
+        "200":
+          description: Pipeline с деталями
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TranscriptionPipelineWithDetails"
+        "404":
+          description: Pipeline не найден
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "401":
+          description: Не авторизован
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "403":
+          description: Недостаточно прав
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "500":
+          description: Внутренняя ошибка сервера
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
+    patch:
+      tags: [Admin]
+      summary: Обновить статус pipeline
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AdminUpdatePipelineDto"
+      responses:
+        "200":
+          description: Pipeline обновлен
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TranscriptionPipeline"
+        "404":
+          description: Pipeline не найден
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "403":
+          description: Недостаточно прав
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "500":
+          description: Внутренняя ошибка сервера
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
+  /admin/transactions:
+    get:
+      tags: [Admin]
+      summary: Получить все транзакции
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: page
+          in: query
+          schema:
+            type: integer
+            default: 1
+            minimum: 1
+          description: Номер страницы
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 20
+            minimum: 1
+            maximum: 100
+          description: Количество элементов на странице
+        - name: status
+          in: query
+          schema:
+            $ref: "#/components/schemas/TransactionStatus"
+          description: Фильтр по статусу
+        - name: provider
+          in: query
+          schema:
+            $ref: "#/components/schemas/PaymentProvider"
+          description: Фильтр по провайдеру
+        - name: userId
+          in: query
+          schema:
+            type: string
+            format: uuid
+          description: Фильтр по пользователю
+      responses:
+        "200":
+          description: Список всех транзакций
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PaginatedTransactionsResponse"
+        "403":
+          description: Недостаточно прав
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
+  /admin/transactions/{id}:
+    patch:
+      tags: [Admin]
+      summary: Обновить статус транзакции
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AdminUpdateTransactionDto"
+      responses:
+        "200":
+          description: Транзакция обновлена
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Transaction"
+        "404":
+          description: Транзакция не найдена
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "403":
+          description: Недостаточно прав
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
+  /admin/statistics:
+    get:
+      tags: [Admin]
+      summary: Получить общую статистику системы
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Статистика системы
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SystemStatistics"
+        "403":
+          description: Недостаточно прав
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
 
 components:
   securitySchemes:
@@ -238,6 +2348,33 @@ components:
         accessToken:
           type: string
 
+    VerifyEmailDto:
+      type: object
+      required: [code]
+      properties:
+        code:
+          type: string
+          description: Код верификации
+
+    ForgotPasswordDto:
+      type: object
+      required: [email]
+      properties:
+        email:
+          type: string
+          format: email
+
+    ResetPasswordDto:
+      type: object
+      required: [code, newPassword]
+      properties:
+        code:
+          type: string
+          description: Код сброса пароля
+        newPassword:
+          type: string
+          minLength: 8
+
     # User schemas
     User:
       type: object
@@ -265,6 +2402,57 @@ components:
         updatedAt:
           type: string
           format: date-time
+
+    CreateUserDto:
+      type: object
+      required: [email]
+      properties:
+        email:
+          type: string
+          format: email
+          description: Email пользователя
+
+    UpdateUserDto:
+      type: object
+      properties:
+        username:
+          type: string
+          minLength: 3
+        name:
+          type: string
+        surname:
+          type: string
+        phone:
+          type: string
+
+    ChangePasswordDto:
+      type: object
+      required: [currentPassword, newPassword]
+      properties:
+        currentPassword:
+          type: string
+        newPassword:
+          type: string
+          minLength: 8
+
+    AdminUpdateUserDto:
+      type: object
+      properties:
+        username:
+          type: string
+          minLength: 3
+        email:
+          type: string
+          format: email
+        name:
+          type: string
+        surname:
+          type: string
+        phone:
+          type: string
+        role:
+          type: string
+          enum: [user, admin]
 
     AuthUser:
       type: object
@@ -308,7 +2496,8 @@ components:
       type: object
       properties:
         id:
-          type: integer
+          type: string
+          format: uuid
         userId:
           type: string
           format: uuid
@@ -327,15 +2516,46 @@ components:
           type: string
           format: date-time
 
+    TranscriptionPipelineWithDetails:
+      allOf:
+        - $ref: "#/components/schemas/TranscriptionPipeline"
+        - type: object
+          properties:
+            transcriptions:
+              type: array
+              items:
+                $ref: "#/components/schemas/Transcription"
+              nullable: true
+              description: Транскрибации (если includeTranscriptions=true)
+            summary:
+              $ref: "#/components/schemas/Summary"
+              nullable: true
+              description: Summary (если includeSummary=true)
+
+    PaginatedPipelinesResponse:
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            oneOf:
+              - $ref: "#/components/schemas/TranscriptionPipeline"
+              - $ref: "#/components/schemas/TranscriptionPipelineWithDetails"
+        pagination:
+          $ref: "#/components/schemas/Pagination"
+
     Transcription:
       type: object
       properties:
         id:
-          type: integer
+          type: string
+          format: uuid
         pipelineId:
-          type: integer
+          type: string
+          format: uuid
         fileId:
-          type: integer
+          type: string
+          format: uuid
         originalFilename:
           type: string
         audioDurationSeconds:
@@ -376,9 +2596,11 @@ components:
       type: object
       properties:
         id:
-          type: integer
+          type: string
+          format: uuid
         pipelineId:
-          type: integer
+          type: string
+          format: uuid
         summaryText:
           type: string
         originalTextLength:
@@ -413,9 +2635,13 @@ components:
         id:
           type: string
           format: uuid
+        userId:
+          type: string
+          format: uuid
         transcriptionId:
           type: string
           format: uuid
+          nullable: true
         type:
           type: string
           enum: [audio, video, document]
@@ -425,12 +2651,78 @@ components:
         size:
           type: integer
           format: int64
+        originalFilename:
+          type: string
+        mimeType:
+          type: string
         createdAt:
           type: string
           format: date-time
         updatedAt:
           type: string
           format: date-time
+
+    PaginatedFilesResponse:
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            $ref: "#/components/schemas/File"
+        pagination:
+          $ref: "#/components/schemas/Pagination"
+
+    PaginatedTranscriptionsResponse:
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            $ref: "#/components/schemas/Transcription"
+        pagination:
+          $ref: "#/components/schemas/Pagination"
+
+    PaginatedTransactionsResponse:
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            $ref: "#/components/schemas/Transaction"
+        pagination:
+          $ref: "#/components/schemas/Pagination"
+
+    PaginatedNotificationsResponse:
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            $ref: "#/components/schemas/InAppNotification"
+        pagination:
+          $ref: "#/components/schemas/Pagination"
+
+    Pagination:
+      type: object
+      properties:
+        page:
+          type: integer
+        limit:
+          type: integer
+        total:
+          type: integer
+        totalPages:
+          type: integer
+
+    PaginatedUsersResponse:
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            $ref: "#/components/schemas/User"
+        pagination:
+          $ref: "#/components/schemas/Pagination"
 
     # Subscription schemas
     Plan:
@@ -490,6 +2782,72 @@ components:
           type: string
           format: date-time
 
+    CreateSubscriptionDto:
+      type: object
+      required: [planId, billingPeriod]
+      properties:
+        planId:
+          type: string
+          format: uuid
+        billingPeriod:
+          $ref: "#/components/schemas/BillingPeriod"
+
+    UpdateSubscriptionDto:
+      type: object
+      properties:
+        planId:
+          type: string
+          format: uuid
+
+    RenewSubscriptionDto:
+      type: object
+      required: [billingPeriod]
+      properties:
+        billingPeriod:
+          $ref: "#/components/schemas/BillingPeriod"
+
+    CreatePlanDto:
+      type: object
+      required: [title, description, monthlyPrice, yearlyPrice]
+      properties:
+        title:
+          type: string
+        description:
+          type: string
+        features:
+          type: array
+          items:
+            type: string
+        monthlyPrice:
+          type: integer
+          minimum: 0
+        yearlyPrice:
+          type: integer
+          minimum: 0
+        isFeatured:
+          type: boolean
+          default: false
+
+    UpdatePlanDto:
+      type: object
+      properties:
+        title:
+          type: string
+        description:
+          type: string
+        features:
+          type: array
+          items:
+            type: string
+        monthlyPrice:
+          type: integer
+          minimum: 0
+        yearlyPrice:
+          type: integer
+          minimum: 0
+        isFeatured:
+          type: boolean
+
     Transaction:
       type: object
       properties:
@@ -522,6 +2880,39 @@ components:
         updatedAt:
           type: string
           format: date-time
+
+    CreateTransactionDto:
+      type: object
+      required: [subscriptionId, provider, billingPeriod]
+      properties:
+        subscriptionId:
+          type: string
+          format: uuid
+        provider:
+          $ref: "#/components/schemas/PaymentProvider"
+        billingPeriod:
+          $ref: "#/components/schemas/BillingPeriod"
+
+    AdminUpdateTransactionDto:
+      type: object
+      properties:
+        status:
+          $ref: "#/components/schemas/TransactionStatus"
+        externalId:
+          type: string
+        providerMeta:
+          type: object
+
+    AdminUpdatePipelineDto:
+      type: object
+      properties:
+        pipelineStatus:
+          type: string
+          enum: [transcribing, summarizing, completed, failed]
+        priority:
+          type: integer
+        metadata:
+          type: object
 
     # Notification schemas
     InAppNotification:
@@ -600,6 +2991,88 @@ components:
           type: string
           format: date-time
 
+    # Statistics schemas
+    UserStatistics:
+      type: object
+      properties:
+        totalTranscriptions:
+          type: integer
+          description: Всего транскрибаций
+        completedTranscriptions:
+          type: integer
+          description: Завершенных транскрибаций
+        pendingTranscriptions:
+          type: integer
+          description: Транскрибаций в обработке
+        failedTranscriptions:
+          type: integer
+          description: Неудачных транскрибаций
+        totalFiles:
+          type: integer
+          description: Всего загружено файлов
+        totalStorageUsed:
+          type: integer
+          format: int64
+          description: Использовано места в байтах
+        subscriptionStatus:
+          $ref: "#/components/schemas/SubscriptionStatus"
+        subscriptionEndDate:
+          type: string
+          format: date-time
+          nullable: true
+          description: Дата окончания подписки
+        totalTransactions:
+          type: integer
+          description: Всего транзакций
+        successfulTransactions:
+          type: integer
+          description: Успешных транзакций
+
+    SystemStatistics:
+      type: object
+      properties:
+        totalUsers:
+          type: integer
+          description: Всего пользователей
+        activeUsers:
+          type: integer
+          description: Активных пользователей
+        totalTranscriptions:
+          type: integer
+          description: Всего транскрибаций
+        completedTranscriptions:
+          type: integer
+          description: Завершенных транскрибаций
+        pendingTranscriptions:
+          type: integer
+          description: Транскрибаций в обработке
+        failedTranscriptions:
+          type: integer
+          description: Неудачных транскрибаций
+        totalSubscriptions:
+          type: integer
+          description: Всего подписок
+        activeSubscriptions:
+          type: integer
+          description: Активных подписок
+        totalTransactions:
+          type: integer
+          description: Всего транзакций
+        successfulTransactions:
+          type: integer
+          description: Успешных транзакций
+        totalRevenue:
+          type: integer
+          description: Общий доход в копейках
+        totalStorageUsed:
+          type: integer
+          format: int64
+          description: Использовано места в байтах
+        averageProcessingTime:
+          type: number
+          format: float
+          description: Среднее время обработки в секундах
+
     # Enums
     SubscriptionStatus:
       type: string
@@ -632,10 +3105,31 @@ components:
     # Error schemas
     Error:
       type: object
+      required: [error, message, statusCode]
       properties:
         error:
           type: string
+          description: Тип ошибки
         message:
           type: string
+          description: Сообщение об ошибке
         statusCode:
           type: integer
+          description: HTTP статус код
+        timestamp:
+          type: string
+          format: date-time
+          description: Время возникновения ошибки
+        path:
+          type: string
+          description: Путь запроса
+        details:
+          type: object
+          description: Дополнительные детали ошибки
+          nullable: true
+      example:
+        error: "Bad Request"
+        message: "Невалидные данные"
+        statusCode: 400
+        timestamp: "2024-01-01T12:00:00Z"
+        path: "/api/auth/login"
