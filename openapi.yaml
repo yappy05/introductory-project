@@ -17,8 +17,10 @@ tags:
     description: Управление пользователями
   - name: Files
     description: Управление файлами
+  - name: Pipelines
+    description: Transcription Pipelines - основной способ работы с транскрибациями
   - name: Transcriptions
-    description: Транскрибация файлов
+    description: Прямая работа с транскрибациями (альтернативный способ)
   - name: Subscriptions
     description: Подписки и платежи
   - name: Transactions
@@ -600,7 +602,7 @@ paths:
 
   /pipelines:
     get:
-      tags: [Transcriptions]
+      tags: [Pipelines]
       summary: Получить все pipelines транскрибаций пользователя с опциональными транскрибациями и summary
       description: Возвращает список всех pipelines текущего пользователя. Используйте параметры includeTranscriptions и includeSummary для включения связанных данных в ответ. Это основной способ получения транскрибаций и summary по архитектуре БД.
       security:
@@ -675,7 +677,7 @@ paths:
 
   /pipelines/{id}:
     get:
-      tags: [Transcriptions]
+      tags: [Pipelines]
       summary: Получить конкретный pipeline с деталями
       description: Возвращает pipeline с транскрибациями и summary. По умолчанию включает транскрибации и summary.
       security:
@@ -778,14 +780,29 @@ paths:
     post:
       tags: [Transcriptions]
       summary: Создать транскрибацию
+      description: Создает новый transcription pipeline. Загружает аудио файл напрямую и создает pipeline для его транскрибации.
       security:
         - bearerAuth: []
       requestBody:
         required: true
         content:
-          application/json:
+          multipart/form-data:
             schema:
-              $ref: "#/components/schemas/CreateTranscriptionDto"
+              type: object
+              required: [file]
+              properties:
+                file:
+                  type: string
+                  format: binary
+                  description: Аудио файл для транскрибации
+                language:
+                  type: string
+                  default: ru
+                  description: Язык транскрибации (ru, en, и т.д.)
+                priority:
+                  type: integer
+                  default: 0
+                  description: Приоритет обработки (0 - обычный, 1 - высокий)
       responses:
         "201":
           description: Транскрибация создана
@@ -802,15 +819,27 @@ paths:
                 createdAt: "2024-01-01T12:00:00Z"
                 updatedAt: "2024-01-01T12:00:00Z"
         "400":
-          description: Невалидные данные или файл не найден
+          description: Невалидные данные или неверный формат файла
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/Error"
               example:
                 error: "Bad Request"
-                message: "Файл не найден"
+                message: "Неверный формат файла"
                 statusCode: 400
+                timestamp: "2024-01-01T12:00:00Z"
+                path: "/api/transcriptions"
+        "413":
+          description: Файл слишком большой
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+              example:
+                error: "Payload Too Large"
+                message: "Размер файла превышает максимально допустимый"
+                statusCode: 413
                 timestamp: "2024-01-01T12:00:00Z"
                 path: "/api/transcriptions"
         "402":

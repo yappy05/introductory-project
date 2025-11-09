@@ -17,7 +17,11 @@
     "test:watch": "jest --watch",
     "test:cov": "jest --coverage",
     "test:debug": "node --inspect-brk -r tsconfig-paths/register -r ts-node/register node_modules/.bin/jest --runInBand",
-    "test:e2e": "jest --config ./test/jest-e2e.json"
+    "test:e2e": "jest --config ./test/jest-e2e.json",
+    "gen:api": "openapi-generator-cli generate -i ../openapi.yaml -g typescript-axios -o src/generated --additional-properties=withSeparateModelsAndApi=true,modelPackage=models,apiPackage=apis,modelPropertyNaming=original,supportsES6=true,useSingleRequestParameter=true,enumPropertyNaming=original",
+    "swagger": "npx --yes redoc-cli serve ../openapi.yaml --port 8080",
+    "swagger:ui": "npx --yes @scalar/cli --port 8080 ../openapi.yaml",
+    "swagger:docker": "docker run -p 8080:8080 -e SWAGGER_JSON=/openapi.yaml -v \"$(pwd)/../openapi.yaml:/openapi.yaml\" swaggerapi/swagger-ui"
   },
   "dependencies": {
     "@nestjs/common": "^11.0.1",
@@ -35,6 +39,7 @@
     "@nestjs/cli": "^11.0.0",
     "@nestjs/schematics": "^11.0.0",
     "@nestjs/testing": "^11.0.1",
+    "@openapitools/openapi-generator-cli": "^2.25.0",
     "@swc/cli": "^0.6.0",
     "@swc/core": "^1.10.7",
     "@types/express": "^5.0.0",
